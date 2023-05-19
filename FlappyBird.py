@@ -2,11 +2,11 @@ import pygame #biblioteca usada para criacao de jogos em python
 import os #biblioteca para integrar o codigo com os arquivos do computador (imgs)
 import random #biblioteca para gerar valores aleatorios (usado na geracao dos canos)
 
-SCREEN_HEIGH = 800
-SCREEN_WIDTH = 300
+SCREEN_HEIGH = 500
+SCREEN_WIDTH = 800
 
 IMG_PIPE = pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'pipe.png')))
-IMG_BG = pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'bd.png')))
+IMG_BG = pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'bg.png')))
 IMG_BASE = pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'base.png')))
 IMGS_BIRD = [
     pygame.transform.scale2x(pygame.image.load(os.path.join('imgs', 'bird1.png'))),
@@ -18,7 +18,7 @@ pygame.font.init()
 FONT_SCORE = pygame.font.SysFont('Arial', 50)
 
 
-Class Bird:
+class Bird:
     IMGS = IMGS_BIRD
     #animacoes de rotacao
     ROTATE_MAX = 25
@@ -87,16 +87,16 @@ Class Bird:
         
         #desenhar imagem
         rotate_img = pygame.transform.rotate(self.img, self.angle) #rotaciona a imagem
-        center_img = self.img.get_rect(topleft=(self.x, self.y).center)
+        center_img = self.img.get_rect(topleft=(self.x, self.y)).center
         rectangle = rotate_img.get_rect(center = center_img)
         screen.blit(rotate_img, rectangle.topleft)
         
     #método para criar uma mascara no pássaro e evitar colisões em que nao houve contato de fato
     def get_mask(self):
-        pygame.mask.frok_surface(self.img)
+        return pygame.mask.from_surface(self.img)
         
         
-Class Pipe:
+class Pipe:
     DISTANCE = 200 # distancia entre o cano de cima e o de baixo
     SPEED = 5 # nesse código, o cano que se movimenta para trás, e o pássaro fica parado no eixo y
     
@@ -116,7 +116,7 @@ Class Pipe:
         self.bottom_position = self.height + self.DISTANCE
         
     def move(self):
-        self.x -= self.VELOCIDADE
+        self.x -= self.SPEED
     
     def draw(self, screen):
         screen.blit(self.PIPE_TOP, (self.x, self.top_position))
@@ -140,5 +140,101 @@ Class Pipe:
         else:
             return False
         
-Class Base:
-    pass
+class Base:
+    SPEED = 5
+    WIDTH = IMG_BASE.get_width()
+    IMG = IMG_BASE
+    
+    def __init__(self, y):
+        self.y = y
+        self.x1 = 0
+        self.x2 = self.WIDTH
+    
+    def move(self):
+        self.x1 -= self.SPEED
+        self.x2 -= self.SPEED
+        
+        #se saiu da tela
+        if self.x1 + self.WIDTH < 0:
+            self.x1 = self.x2 + self.WIDTH
+        if self.x2 + self.WIDTH < 0:
+            self.x2 = self.x1 + self.WIDTH
+            
+    def draw(self, screen):
+        screen.blit(self.IMG, (self.x1, self.y))
+        screen.blit(self.IMG, (self.x2, self.y))
+        
+def draw_screen(screen, birds, pipes, base, score):
+    screen.blit(IMG_BG, (0, 0))
+    for bird in birds:
+        bird.draw(screen)
+        
+    for pipe in pipes:
+        pipe.draw(screen)
+        
+    text = FONT_SCORE.render(f"Pontuação: {score}", 1, (255, 255, 255))
+    screen.blit(text, (SCREEN_WIDTH - 10 - text.get_width(), 10))
+    
+    base.draw(screen)
+    pygame.display.update()
+    
+def main():
+    birds = [Bird(230, 250)]
+    base = Base(730)
+    pipes = [Pipe(700)]
+    screen = pygame.display.set_mode((SCREEN_HEIGH, SCREEN_WIDTH))
+    score = 0
+    clock = pygame.time.Clock()
+    
+    playing = True
+    while playing:
+        clock.tick(30)
+        
+        # interação com o jogador
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                playing = False
+                pygame.quit
+                quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    for bird in birds:
+                        bird.jump()
+        
+        # movimento dos objetos
+        for bird in birds:
+            bird.move()
+        base.move()
+        
+        add_pipe = False
+        remove_pipes = []
+        
+        for pipe in pipes:
+            for i, bird in enumerate(birds):
+                if pipe.colision(bird):
+                    birds.pop(i)
+                
+                if not pipe.overtook and bird.x > pipe.x:
+                    pipe.overtook = True
+                    add_pipe = True 
+            pipe.move()
+            if pipe.x + pipe.PIPE_TOP.get_width() < 0:
+                remove_pipes.append(pipe)
+        
+        if add_pipe:
+            score += 1
+            pipes.append(Pipe(600))
+        
+        for pipe in remove_pipes:
+            pipes.remove(pipe)
+        
+        for i, bird in enumerate(birds):
+            if (bird.y + bird.img.get_height()) > base.y or bird.y < 0:
+                birds.pop(i)
+                
+        
+        draw_screen(screen, birds, pipes, base, score)
+        
+        
+if __name__ == '__main__':
+    main()
