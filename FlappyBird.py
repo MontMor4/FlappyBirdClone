@@ -173,7 +173,7 @@ def draw_screen(screen, birds, pipes, base, score):
         pipe.draw(screen)
         
     text = FONT_SCORE.render(f"Pontuação: {score}", 1, (255, 255, 255))
-    screen.blit(text, (SCREEN_WIDTH - 10 - text.get_width(), 10))
+    screen.blit(text, (SCREEN_HEIGH - 10 - text.get_width(), 10))
     
     base.draw(screen)
     pygame.display.update()
@@ -236,5 +236,4 @@ def main():
         draw_screen(screen, birds, pipes, base, score)
         
         
-if __name__ == '__main__':
-    main()
+main()
